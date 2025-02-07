@@ -92,11 +92,11 @@ class ContactRepository extends BaseRepository implements ContactRepositoryInter
             $builder->orWhere('last_name', data_get($filters, 'last_name'));
         }
 
-        if (isset($filters['emails'])) {
+        if (isset($filters['email'])) {
             $builder->orwhereHas('emails', fn ($query) => $query->where('email', data_get($filters, 'email')));
         }
 
-        if (isset($filters['phones'])) {
+        if (isset($filters['phone'])) {
             $builder->orWhereHas('phones', fn ($query) => $query->where('phone', data_get($filters, 'phone')));
         }
 
