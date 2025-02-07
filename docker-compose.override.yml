@@ -1,0 +1,13 @@
+services:
+  nginx:
+    volumes:
+      - ./public:/app/public
+  app:
+    build:
+      args:
+        HOST_USER: ${HOST_USER}
+        HOST_UID: ${HOST_UID}
+        HOST_GID: ${HOST_GID}
+    volumes:
+      - .:/app
+    tty: true
