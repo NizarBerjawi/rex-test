@@ -9,7 +9,7 @@ use Illuminate\Pagination\AbstractPaginator;
 
 class BaseRepository implements RepositoryInterface
 {
-    public function __construct(public BaseModel $model, public array $relations = [], public array $filters = []) {}
+    public function __construct(public BaseModel $model, public array $relations = []) {}
 
     /**
      * The relations to loaded
