@@ -32,14 +32,16 @@ class UpsertContactRequest extends FormRequest
                 'email',
                 'distinct',
                 Rule::unique('emails', 'email')
-                    ->ignore($this->uuid, idColumn: 'contact_uuid'),
+                    ->ignore($this->uuid, 'contact_uuid'),
             ],
+            'included.phones.*.uuid' => 'sometimes|uuid',
             'included.phones.*.phone' => [
                 'required',
-                'phone:AU,NZ',
+                'regex:/\+(61|62)\d{1,10}$/', // A very basic NZ/AU E164 regex validator
                 'distinct',
                 Rule::unique('phones', 'phone')
-                    ->ignore($this->uuid, 'contact_uuid')],
+                    ->ignore($this->uuid, 'contact_uuid'),
+            ],
         ];
     }
 

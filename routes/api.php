@@ -13,4 +13,3 @@ Route::controller(ContactController::class)->group(function () {
 });
 
 Route::post('/contacts/{uuid}/call', CallContact::class)->whereUuid('uuid');
-

@@ -28,7 +28,7 @@ class CallContactJob implements ShouldQueue
         // https://www.twilio.com/docs/voice/make-calls#initiate-an-outbound-call-with-twilio
         $response = Http::post('/fake-twillio-api/scheduleCall', [
             'phone' => $this->contact->phones()->first(),
-            'instructions' => 'fake_id'
+            'instructions' => 'fake_id',
         ]);
 
         if ($response->failed()) {

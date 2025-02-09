@@ -114,7 +114,7 @@ class ContactController
             if ($includes->has('phones')) {
                 $relatedPhones = $includes->get('phones');
 
-                $this->contacts->deleteAllContactPhones($contact, $relatedPhones);
+                $this->contacts->deleteAllContactPhones($contact);
                 $this->contacts->storeContactPhones($contact, $relatedPhones);
             }
 

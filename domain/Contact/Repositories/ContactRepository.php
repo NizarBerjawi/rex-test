@@ -7,14 +7,108 @@ use Domain\Contact\Models\Contact;
 use Domain\Contact\Models\Email;
 use Domain\Contact\Models\Phone;
 use Domain\Contact\Repositories\Contracts\ContactRepositoryInterface;
-use Domain\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\AbstractPaginator;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 
-class ContactRepository extends BaseRepository implements ContactRepositoryInterface
+class ContactRepository implements ContactRepositoryInterface
 {
+    public array $relations = [];
+
+    /**
+     * The relations to loaded
+     */
+    public function with(array $relations): self
+    {
+        $this->relations = $relations;
+
+        return $this;
+    }
+
+    /**
+     * Return all instances of the model
+     */
+    public function all(): Collection
+    {
+        return Contact::with($this->relations)->all();
+    }
+
+    /**
+     * Return a paginated collection of the model
+     */
+    public function paginate(?int $limit = null): AbstractPaginator
+    {
+        /** @var \Illuminate\Pagination\AbstractPaginator */
+        $paginator = Contact::with($this->relations)
+            ->paginate($limit);
+
+        return $paginator->withQueryString();
+    }
+
+    /**
+     * Attempt to find a model by uuid
+     */
+    public function find(string $uuid): Contact
+    {
+        return Contact::with($this->relations)->findOrFail($uuid);
+    }
+
+    /**
+     * Create a new model with the provided attributes
+     */
+    public function create(array $attributes): Contact
+    {
+        return Contact::with($this->relations)
+            ->create($attributes);
+    }
+
+    /**
+     * Attempt to update a model with the provided attributes.
+     */
+    public function update(array $attributes, string $uuid): Contact
+    {
+        $contact = Contact::findOrFail($uuid);
+
+        $contact->fill($attributes);
+
+        $contact->save();
+
+        return $contact->load($this->relations);
+    }
+
+    /**
+     * Attempt to update a model if it is found. Otherwise, create it
+     * with the provided attributes
+     */
+    public function upsert(array $attributes, string $uuid): Contact
+    {
+        $contact = new Contact;
+
+        // We want to create the Contact with a user provided uuid without
+        // having to add uuid to the fillable array of the model
+        $contact->unguard();
+
+        $contact = $contact->updateOrCreate(
+            [$contact->getKeyName() => $uuid],
+            $attributes
+        );
+
+        $contact->reguard();
+
+        $contact->load($this->relations);
+
+        return $contact;
+    }
+
+    /**
+     * Delete a specified model by uuid
+     */
+    public function delete(string $uuid): bool
+    {
+        return Contact::where((new Contact)->getKeyName(), $uuid)->delete();
+    }
+
     /**
      * Bulk create emails for a specified Contact resource
      */
@@ -82,7 +176,7 @@ class ContactRepository extends BaseRepository implements ContactRepositoryInter
      */
     public function searchContactsBy(array $filters, bool $paginate = true): AbstractPaginator|Collection
     {
-        $builder = $this->model->with($this->relations);
+        $builder = Contact::with($this->relations);
 
         if (isset($filters['first_name'])) {
             $builder->where('first_name', data_get($filters, 'first_name'));
