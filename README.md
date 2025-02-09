@@ -1,66 +1,95 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Rex Technical Challenge
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+## How to run the project:
 
-## About Laravel
+I used my own Docker setup to run this project with Make scripts to make running applications easier.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+If you are on Linux, the easiest way to run the project is using the commands in the Makefile. First, ensure you have `Docker` and `make` installed, then run the below commands.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+```
+cp .env.example .env
+make composer-install
+make db-migrate
+make db-seed
+make start 
 
-## Learning Laravel
+# The application should start on http://localhost:8080 
+```
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+Otherwise, you can use Laravel Sail with a Postgres database, you just need to update the .env file
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+## Assumptions
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- Every Contact can have many phones
+- Every Contact can have many emails
+- Every email is unique (two Contacts cannot have the same email)
+- Every phone is unique (two Contacts cannot have the same phone)
+- Phone calls happen asynchronously (more on that below)
+- I should not be using any external packages other than what Laravel comes bundled with.
 
-## Laravel Sponsors
+## Architecture
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+I took inspiration from Domain Driven Design (DDD) while building this application. This approach helps keep the business/application logic decoupled from the things like the database, APIs or CLIs, making it easier to move to different technologies later.
 
-### Premium Partners
+I utilised the Repository Design Pattern as a standerdised way to access and manipulate data. This pattern make software easier to maintain, test and adapt to changes. 
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+I tried to stay true to the Laravel framework instead of fighting against it when implementing these patterns. 
 
-## Contributing
+## API
+I implemented a simple RESTful API that uses some the features of the Contact domain. I loosely followed some of the conventions in the JSON API Specification to design the API.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+The endpoints are:
+```
+GET    /contacts
+GET    /contacts/{uuid}
+POST   /contacts
+PUT    /contacts/{uuid}
+DELETE /contacts/{uuid}
+```
 
-## Code of Conduct
+I was not completely sure about the part related to calling contacts. I made the assumption that we will use an external service such as Twilio to schedule an automated call.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+The endpoint that mocks that is:
 
-## Security Vulnerabilities
+```
+POST /contacts/{uuid}/call
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+To utilize searching/filtering you can do something like this:
+```
+GET    /contacts?filter[first_name]=john&filter[email]=hello@world.com
+```
 
-## License
+This will return all the Contacts having firstName John OR having at least one email equal to "hello@world"
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## Concessions Made:
+
+### No Tests were written
+I would have loved to write feature or unit tests for the application.
+
+### No packages external to Laravel were used.
+In a real world application there are some package that could have been useful and made life easier while architecting this application.
+
+- For the API I would have used this package for sophisticated filtering capabilities: 
+    - https://github.com/spatie/laravel-query-builder
+- For DDD, I would have used these two packages:
+    - https://github.com/lorisleiva/laravel-actions
+    - https://github.com/spatie/laravel-data
+
+### Duplicated Validation rules
+Validation rules were duplicated in Form Requests. Ideally, I should have moved the input validation to the Repository so that its part of the domain. Someone using the ContactRepository to create a new Contact through the CLI will not have their input validated.
+
+### More encapsulation of business logic in Services
+I could have moved more of the Business logic to Services. For example, I could have created a ContactService to Upsert a Contact with all its relations. 
+
+All the code in the `PUT /contacts/{uuid}` endpoint could have been summarised by this:
+```
+$contact = $service->upsertContactWithRelations($contactUuid, $attributes);
+
+return new ConactResource($contact);
+```
+### Missing an OpenAPI specification
+
+## Error Responses:
+I used a simplified implementation of error responses that I've used in a real-world API at work. The error responses follow the [rfc9457](https://www.rfc-editor.org/rfc/rfc9457) standard. This structure allows us to add more details while keeping everything consistent as the application grows.
